@@ -1,36 +1,33 @@
 import React, { PropTypes } from 'react';
 import { render } from 'react-dom';
-import { createStore } from 'redux';
+import { createStore, applyMiddleware } from 'redux';
+import thunk from 'redux-thunk';
 import { connect, Provider } from 'react-redux';
+import * as actions from './actions';
+import { reducer } from './reducer';
 
-const reducer = (state, action) => {
-  switch (action.type) {
-    case 'INCREMENT':
-      return { ...state, counter: state.counter + 1 };
-    case 'DECREMENT':
-      return { ...state, counter: state.counter - 1 };
-    default:
-      return state;
-    }
-};
+const store = createStore(
+  reducer,
+  { isLoading: false, isError: false, repositories: [] },
+  applyMiddleware(thunk)
+);
 
-const store = createStore(reducer, { counter: 0 });
-
-class Counter extends React.Component {
-  static propTypes = {
-    counter: PropTypes.Number,
-    onIncrement: PropTypes.func,
-    onDecrement: PropTypes.func
-  };
+class Repositories extends React.Component {
+  componentDidMount() {
+    const { getData } = this.props;
+    getData();
+  }
 
   render() {
-    const { counter, onDecrement, onIncrement } = this.props;
+    const { isLoading, isError, repositories } = this.props;
 
     return (
       <div>
-        <div>{counter}</div>
-        <button onClick={onDecrement}>-</button>
-        <button onClick={onIncrement}>+</button>
+        {repositories.map((item, index) => {
+          return (<div key={index}>
+            {item.name}
+          </div>);
+        })}
       </div>
     );
   }
@@ -41,16 +38,15 @@ const mapStateToProps = (state) => {
 };
 const mapDispatchToProps = (dispatch) => {
   return {
-    onIncrement: () => dispatch({ type: 'INCREMENT' }),
-    onDecrement: () => dispatch({ type: 'DECREMENT' })
+    getData: () => dispatch(actions.getData())
   }
 };
 
-Counter = connect(mapStateToProps, mapDispatchToProps)(Counter);
+Repositories = connect(mapStateToProps, mapDispatchToProps)(Repositories);
 
 render(
   <Provider store={store}>
-    <Counter />
+    <Repositories />
   </Provider>
   , document.getElementById('root')
 );
